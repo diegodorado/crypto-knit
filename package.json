@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "parcel index.html",
-    "build": "parcel build index.html --public-url ./"
+    "build": "parcel build index.html --public-url '.'",
+    "upload": "dotenv -- bash -c 'ncftpput -z -R -v -m -u ceiborg -p \"$FTPPWD\"  ftp.ceiborg.com /public_html/tricotosa dist/*'"
   },
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^5.15.3",
