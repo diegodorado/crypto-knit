@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <meta name="description" content="">
+  <link rel="stylesheet" href="./src/app.sass">
+</head>
+<body>
+  <h1>Tricotosa</h1>
+  <div id="app">
+    <p>
+      Nota: solo funciona en chrome y debes habilitar el puerto serie experimental desde
+      <pre>chrome://flags/#enable-experimental-web-platform-features</pre>
+    </p>
+    <nav id="tools">
+      <input id="filepicker" type="file" />
+      <button id="download">Download</button>
+      <button id="serial">Connect Serial</button>
+    </nav>
+    <div id="canvasWrapper">
+      <span id="cursor"></span>
+      <canvas id="canvas" />
+    </div>
+    <nav id="palette"></nav>
+  </div>
+  <script src="./src/app.js"></script>        
+</body>
+</html>
+
+

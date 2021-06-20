@@ -1,0 +1,48 @@
+body
+  background-color: #111
+  color: #fafafa
+  font-family: Inconsolata
+  font-size: 16px
+  a
+    color: inherit
+    cursor: pointer
+
+::-webkit-scrollbar
+  width: 0
+
+h1
+  text-align: center
+
+#app
+  padding: 0 10%
+#canvasWrapper
+  position: relative
+  font-size: 0
+  border: 1px solid #fafafa
+  box-sizing: border-box
+#cursor
+  position: absolute
+  display: none
+  pointer-events: none
+#canvas
+  //cursor: none
+  width: 100%
+  image-rendering: pixelated
+#palette, nav
+  margin: 20px 0
+  display: flex
+  border: 1px solid #fafafa
+  box-sizing: border-box
+  span
+    position: relative
+    cursor: pointer
+    flex: 10
+    height: 32px
+
+
+// prevent drag
+//*, *::after, *::before
+//  -webkit-user-select: none
+//  -webkit-user-drag: none
+//  -webkit-app-region: no-drag
+//  cursor: default
