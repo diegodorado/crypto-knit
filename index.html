@@ -7,22 +7,26 @@
   <link rel="stylesheet" href="./src/app.sass">
 </head>
 <body>
-  <h1>Tricotosa</h1>
   <div id="app">
-    <p>
-      Nota: solo funciona en chrome y debes habilitar el puerto serie experimental desde
-      <pre>chrome://flags/#enable-experimental-web-platform-features</pre>
-    </p>
-    <nav id="tools">
-      <input id="filepicker" type="file" />
-      <button id="download">Download</button>
-      <button id="serial">Connect Serial</button>
-    </nav>
-    <div id="canvasWrapper">
-      <span id="cursor"></span>
-      <canvas id="canvas" />
+    <div class="left">
+      <h1>Tricotosa</h1>
+      <p>
+        Nota: solo funciona en chrome y debes habilitar el puerto serie experimental desde
+        <pre>chrome://flags/#enable-experimental-web-platform-features</pre>
+      </p>
+      <nav id="tools">
+        <input id="filepicker" type="file" />
+        <button id="download">Download</button>
+        <button id="serial">Connect Serial</button>
+      </nav>
+      <nav id="palette"></nav>
     </div>
-    <nav id="palette"></nav>
+    <div class="right">
+      <div id="canvasWrapper">
+        <span id="cursor"></span>
+        <canvas id="canvas" />
+      </div>
+    </div>
   </div>
   <script src="./src/app.js"></script>        
 </body>

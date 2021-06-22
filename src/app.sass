@@ -10,11 +10,33 @@ body
 ::-webkit-scrollbar
   width: 0
 
-h1
-  text-align: center
-
 #app
-  padding: 0 10%
+  padding: 20px 10%
+  display: flex
+  .left
+    flex: 1
+  .right
+    padding-left: 20px
+    flex: 1
+
+#tools
+  display: flex
+  button, input
+    flex: 1
+    border: 1px solid #fafafa
+    color: #fafafa
+    box-sizing: border-box
+    cursor: pointer
+    background: #111
+    height: 32px
+    line-height: 32px
+    &:hover
+      background: #333
+  input
+    overflow: hidden
+    &::-webkit-file-upload-button
+      visibility: hidden
+
 #canvasWrapper
   position: relative
   font-size: 0

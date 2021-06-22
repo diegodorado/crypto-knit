@@ -245,19 +245,17 @@ const sendPattern = async () => {
   const rows = canvas.height
   const pattern = indexes.join('')
 
-  const pad = (num, places) => String(num).padStart(places, '0')
+  const pad = (num, places) => String(num).padStart(places, ' ')
 
   // motif is the data that is going to be streamed (as bytes)
   // and has the following format
   const motif = `4${pad(needles,4)}${pad(rows,4)} ${pattern}`
 
-  // make bytestream from motif
-  const data = new Uint8Array(motif.split('').map( c => c.charCodeAt(0)))
-  console.log(data);
-
   const writer = port.writable.getWriter()
 
-  await writer.write(data)
+  const encoder = new TextEncoder()
+  const buf8 = encoder.encode(motif)
+  await writer.write(buf8)
 
   // Allow the serial port to be closed later.
   writer.releaseLock()
@@ -272,11 +270,21 @@ const sendPattern = async () => {
 
 }
 
+const sendHello = async () => {
+  const writer = port.writable.getWriter()
+  const encoder = new TextEncoder()
+  const buf8 = encoder.encode("HOLA GATETE\n")
+  await writer.write(buf8.buffer)
+  // Allow the serial port to be closed later.
+  writer.releaseLock()
+}
+
 const onSerialBtnClick = async () => {
 
   // if port is already connected
   if(port){
     await sendPattern()
+    //await sendHello()
   }
   else{
 
@@ -293,8 +301,8 @@ const onSerialBtnClick = async () => {
 }
 
 const tryConnectSerial = async () => {
+  return
   const ports = await navigator.serial.getPorts();
-  console.log(ports);
   if(ports.length > 0){
     await connectSerial(ports[0])
   }
@@ -304,18 +312,21 @@ const connectSerial = async (_port) => {
 
   try {
 
-    await _port.open({
+    const options = {
       baudRate: 1200,
       parity: "even",
       stopBits: 1,
       dataBits: 8
-    })
+    }
+
+    await _port.open(options)
 
     serialBtn.innerText = "Send Pattern"
     // save a reference to the port
     port = _port
       
   } catch (e) {
+    console.error(e)
     /* handle error */
   }
 
