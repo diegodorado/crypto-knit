@@ -9,7 +9,8 @@ const HEIGHT = 50
 const paletteSelector = document.getElementById("palette")
 const serialBtn = document.getElementById("serial")
 const canvas = document.getElementById("canvas")
-const cursor =  document.getElementById("cursor")
+const cursor = document.getElementById("cursor")
+const progress = document.getElementById("progress")
 const ctx = canvas.getContext("2d")
 
 const picker = new Picker({
@@ -17,9 +18,9 @@ const picker = new Picker({
   onChange: (color) => {
     const el = picker.settings.parent
     const i = paletteIndex(el)
-    palette[i*3 + 0] = color.rgba[0]
-    palette[i*3 + 1] = color.rgba[1]
-    palette[i*3 + 2] = color.rgba[2]
+    palette[i * 3 + 0] = color.rgba[0]
+    palette[i * 3 + 1] = color.rgba[1]
+    palette[i * 3 + 2] = color.rgba[2]
     renderPallete()
   },
   onDone: (color) => {
@@ -75,8 +76,8 @@ const paintCell = () => {
 }
 
 const paletteIndex = el => {
-  for(let i = 0; i< 4; i++) {
-    if(paletteSelector.children[i] === el)
+  for (let i = 0; i < 4; i++) {
+    if (paletteSelector.children[i] === el)
       return i
   }
 }
@@ -104,7 +105,7 @@ const onPaletteRightClick = (ev) => {
 
 const renderPallete = () => {
 
-  for(let i = 0; i< 4; i++) {
+  for (let i = 0; i < 4; i++) {
     paletteSelector.children[i].style = `background: ${paletteColor(i)};`
   }
 
@@ -114,7 +115,7 @@ const renderPallete = () => {
 }
 
 const paletteColor = index => {
-  const rgb = palette.slice( index * 3 , (index+1) * 3 )
+  const rgb = palette.slice(index * 3, (index + 1) * 3)
   return `rgb(${rgb.join(',')})`
 }
 
@@ -146,7 +147,7 @@ const loadIndexedImage = (img) => {
   // save palette
   palette = img.tabs.PLTE
   //remove transparency
-  img.tabs.tRNS = [255,255,255,255]
+  img.tabs.tRNS = [255, 255, 255, 255]
   renderPallete()
   // easier to decode this way
   canvas.width = img.width
@@ -155,7 +156,7 @@ const loadIndexedImage = (img) => {
 
   // get the image data buffer
   const imageData = ctx.getImageData(0, 0, img.width, img.height)
-  
+
   // convert to RGBA
   const buf8 = new Uint8Array(UPNG.toRGBA8(img)[0])
 
@@ -182,7 +183,7 @@ const onFileChange = (ev) => {
 
     // re-encode to 4 color PNG 
     const data = UPNG.encode([buf8], img.width, img.height, 4)
-    
+
     // re-decode PNG data
     const img2 = UPNG.decode(data)
 
@@ -196,7 +197,7 @@ const onFileChange = (ev) => {
 const download = () => {
   const link = document.createElement('a')
   link.download = 'pattern.png'
-  link.href = document.getElementById('canvas').toDataURL()
+  link.href = canvas.toDataURL()
   link.click()
 }
 
@@ -213,9 +214,9 @@ const saveState = () => {
 
 }
 
-const tryLoadState =  () => {
+const tryLoadState = () => {
   const parts = location.hash.split("#")
-  if(parts.length === 2){
+  if (parts.length === 2) {
     //const d = lzw_decode(parts[1])
     //console.log(d);
   }
@@ -223,23 +224,25 @@ const tryLoadState =  () => {
 
 const sendPattern = async () => {
 
+  // create a 32bit palette to match image data as 32bit pixels
+  const pal32 = new Uint32Array([
+    255 << 24 | (palette[2] << 16) | (palette[1] << 8) | (palette[0]),
+    255 << 24 | (palette[5] << 16) | (palette[4] << 8) | (palette[3]),
+    255 << 24 | (palette[8] << 16) | (palette[7] << 8) | (palette[6]),
+    255 << 24 | (palette[11] << 16) | (palette[10] << 8) | (palette[9]),
+  ])
+
   // get the image data buffer
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
 
   // read the image data buffer as uint32 (rgba)
   const buf32 = new Uint32Array(imageData.data.buffer)
 
-  // create a 32bit palette to match image data as 32bit pixels
-  const pal32 = new Uint32Array( [
-    255 << 24 | (palette[2] << 16)  | (palette[1] << 8) | (palette[0] ),
-    255 << 24 | (palette[5] << 16)  | (palette[4] << 8) | (palette[3] ),
-    255 << 24 | (palette[8] << 16)  | (palette[7] << 8) | (palette[6] ),
-    255 << 24 | (palette[11] << 16)  | (palette[10] << 8) | (palette[9] ),
-  ])
-
   // transform from full color to indexed color
-  const indexes = buf32.map( a => pal32.indexOf(a))
-
+  const indexes = buf32.map(a => {
+    const i = pal32.indexOf(a)
+    return i !== -1 ? i : 0
+  })
 
   const needles = canvas.width
   const rows = canvas.height
@@ -249,44 +252,42 @@ const sendPattern = async () => {
 
   // motif is the data that is going to be streamed (as bytes)
   // and has the following format
-  const motif = `4${pad(needles,4)}${pad(rows,4)} ${pattern}`
+  const message = `4${pad(needles, 4)}${pad(rows, 4)} ${pattern}`
 
   const writer = port.writable.getWriter()
-
   const encoder = new TextEncoder()
-  const buf8 = encoder.encode(motif)
-  await writer.write(buf8)
+  const encoded = encoder.encode(message)
 
-  // Allow the serial port to be closed later.
-  writer.releaseLock()
+  const len = 8
 
-  // just for fun
-  let str = ''
-  for(let i = 0; i< canvas.height; i++){
-    str += indexes.slice(i * canvas.width, (i+1) * canvas.width).join('') + '\n'
+
+
+  for (let i = 0; i < encoded.length;) {
+
+    const chunk = encoded.slice(i, i + len)
+    //await writer.ready
+    await writer.write(chunk)
+    i += chunk.length
+
+    const percent = Math.round(i*100/encoded.length)
+    progress.children[0].style.width = `${percent}%`
+
   }
-  console.log(str);
 
-
-}
-
-const sendHello = async () => {
-  const writer = port.writable.getWriter()
-  const encoder = new TextEncoder()
-  const buf8 = encoder.encode("HOLA GATETE\n")
-  await writer.write(buf8.buffer)
   // Allow the serial port to be closed later.
   writer.releaseLock()
+
+  progress.children[0].style.width = `0%`
+
 }
 
 const onSerialBtnClick = async () => {
 
   // if port is already connected
-  if(port){
+  if (port) {
     await sendPattern()
-    //await sendHello()
   }
-  else{
+  else {
 
     try {
       // request the serial port
@@ -301,35 +302,45 @@ const onSerialBtnClick = async () => {
 }
 
 const tryConnectSerial = async () => {
-  return
-  const ports = await navigator.serial.getPorts();
-  if(ports.length > 0){
-    await connectSerial(ports[0])
+
+  const ports = await navigator.serial.getPorts()
+
+  // try to connect to the first non failing serial port allowed
+  for (let i = 0; i < ports.length; i++) {
+    try {
+      await connectSerial(ports[i])
+      // exit if connected succesfully
+      return
+    } catch (e) {
+    }
   }
+
 }
+
+navigator.serial.addEventListener('connect', (e) => {
+  console.log(e);
+  // Connect to `e.target` or add it to a list of available ports.
+});
+
+navigator.serial.addEventListener('disconnect', (e) => {
+  console.log(e);
+  // Remove `e.target` from the list of available ports.
+});
 
 const connectSerial = async (_port) => {
 
-  try {
-
-    const options = {
-      baudRate: 1200,
-      parity: "even",
-      stopBits: 1,
-      dataBits: 8
-    }
-
-    await _port.open(options)
-
-    serialBtn.innerText = "Send Pattern"
-    // save a reference to the port
-    port = _port
-      
-  } catch (e) {
-    console.error(e)
-    /* handle error */
+  const options = {
+    baudRate: 1200,
+    parity: "even",
+    stopBits: 1,
+    dataBits: 8
   }
 
+  await _port.open(options)
+
+  serialBtn.innerText = "Send Pattern"
+  // save a reference to the port
+  port = _port
 
 }
 
@@ -356,10 +367,13 @@ const init = () => {
   canvas.addEventListener('mouseenter', onCanvasMouseEnter, false)
   canvas.addEventListener('mouseleave', onCanvasMouseLeave, false)
 
-  for(let i = 0; i< 4; i++) {
+  for (let i = 0; i < 4; i++) {
     const span = document.createElement('span')
     paletteSelector.appendChild(span)
   }
+
+  const span = document.createElement('span')
+  progress.appendChild(span)
 
   paletteSelector.addEventListener('click', onPaletteClick, false)
   paletteSelector.addEventListener('contextmenu', onPaletteRightClick, false)
@@ -373,7 +387,7 @@ const init = () => {
   window.oncontextmenu = (ev) => ev.preventDefault()
 
   // setup an update loop
-  const raf =  () => {
+  const raf = () => {
     onUpdate()
     requestAnimationFrame(raf)
   }
@@ -386,25 +400,25 @@ const onResize = () => {
 
   const {clientWidth, clientHeight, width, height} = canvas
 
-  cellWidth = clientWidth/ width
-  cellHeight = clientHeight/ height
+  cellWidth = clientWidth / width
+  cellHeight = clientHeight / height
 
-  cursor.style.width = `${ Math.floor(cellWidth) }px`
-  cursor.style.height = `${ Math.floor(cellHeight) }px`
+  cursor.style.width = `${Math.floor(cellWidth)}px`
+  cursor.style.height = `${Math.floor(cellHeight)}px`
 }
 
 const clamp = (val, min, max) => Math.max(min, Math.min(max, val))
 
-const onUpdate =  () => {
+const onUpdate = () => {
 
-  const newX = clamp( Math.floor(mouseX / cellWidth), 0, canvas.width - 1)
-  const newY = clamp( Math.floor(mouseY / cellHeight), 0, canvas.height - 1)
+  const newX = clamp(Math.floor(mouseX / cellWidth), 0, canvas.width - 1)
+  const newY = clamp(Math.floor(mouseY / cellHeight), 0, canvas.height - 1)
 
   if (x !== newX || y !== newY) {
     x = newX
     y = newY
-    cursor.style.top = `${ canvas.offsetTop + y * cellHeight }px`
-    cursor.style.left = `${ canvas.offsetLeft + x * cellWidth }px`
+    cursor.style.top = `${canvas.offsetTop + y * cellHeight}px`
+    cursor.style.left = `${canvas.offsetLeft + x * cellWidth}px`
   }
 
 }
