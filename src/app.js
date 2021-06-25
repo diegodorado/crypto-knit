@@ -1,6 +1,6 @@
 import UPNG from '@pdf-lib/upng';
 import Picker from 'vanilla-picker'
-import '@fortawesome/fontawesome-free/css/all.css'
+//import '@fortawesome/fontawesome-free/css/all.css'
 
 // constants
 const WIDTH = 50
@@ -8,10 +8,12 @@ const HEIGHT = 50
 
 const paletteSelector = document.getElementById("palette")
 const serialBtn = document.getElementById("serial")
+const shareBtn = document.getElementById("share")
 const canvas = document.getElementById("canvas")
 const cursor = document.getElementById("cursor")
 const progress = document.getElementById("progress")
 const ctx = canvas.getContext("2d")
+
 
 const picker = new Picker({
   popup: 'top',
@@ -49,7 +51,6 @@ const onCanvasMouseUp = () => {
   mouseDown = false
 }
 
-
 const onCanvasMouseMove = (ev) => {
   mouseX = ev.offsetX
   mouseY = ev.offsetY
@@ -68,7 +69,6 @@ const onCanvasMouseLeave = () => {
   cursor.style.display = 'none'
   mouseDown = false
 }
-
 
 const paintCell = () => {
   ctx.fillRect(x, y, 1, 1)
@@ -137,9 +137,6 @@ const renderImage = () => {
   imageData.data.set(buf8);
   ctx.putImageData(imageData, 0, 0);
 
-  // encode data
-  //saveState()
-
 }
 
 const loadIndexedImage = (img) => {
@@ -163,9 +160,6 @@ const loadIndexedImage = (img) => {
   imageData.data.set(buf8);
   ctx.putImageData(imageData, 0, 0);
 
-  // encode data
-  //saveState()
-
 }
 
 const onFileChange = (ev) => {
@@ -188,6 +182,10 @@ const onFileChange = (ev) => {
     const img2 = UPNG.decode(data)
 
     loadIndexedImage(img2)
+
+    // save the state
+    saveState()
+
   }
 
   reader.readAsArrayBuffer(ev.target.files[0]);
@@ -201,24 +199,35 @@ const download = () => {
   link.click()
 }
 
-const saveState = () => {
+function base64ToArrayBuffer(base64) {
+    var binary_string =  atob(base64);
+    var len = binary_string.length;
+    var bytes = new Uint8Array( len );
+    for (var i = 0; i < len; i++)        {
+        bytes[i] = binary_string.charCodeAt(i);
+    }
+    return bytes.buffer;
+}
 
-  return
+const saveState = () => {
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
   const data = UPNG.encode([imageData.data.buffer], canvas.width, canvas.height, 4)
-  console.log(data)
-  return
+  const str = btoa(String.fromCharCode(...new Uint8Array(data)))
 
-  window.history.replaceState(null, null, `#${d}`)
+  // push the state
+  window.history.replaceState(null, null, `#${str}`)
 
 }
 
 const tryLoadState = () => {
   const parts = location.hash.split("#")
   if (parts.length === 2) {
-    //const d = lzw_decode(parts[1])
-    //console.log(d);
+
+    const str = parts[1]
+    const data = base64ToArrayBuffer(str)
+    const img = UPNG.decode(data)
+    loadIndexedImage(img)
   }
 }
 
@@ -269,7 +278,7 @@ const sendPattern = async () => {
     await writer.write(chunk)
     i += chunk.length
 
-    const percent = Math.round(i*100/encoded.length)
+    const percent = Math.round(i * 100 / encoded.length)
     progress.children[0].style.width = `${percent}%`
 
   }
@@ -278,6 +287,29 @@ const sendPattern = async () => {
   writer.releaseLock()
 
   progress.children[0].style.width = `0%`
+
+}
+
+const copy2clip = (text) => {
+  const dummy = document.createElement('input')
+  document.body.appendChild(dummy)
+  dummy.value = text
+  dummy.select()
+  document.execCommand('copy')
+  document.body.removeChild(dummy)
+}
+
+const onShareBtnClick = (ev) => {
+  
+  ev.preventDefault();
+  const str = window.location.href
+  copy2clip(str)
+
+  // flash message
+  shareBtn.classList.add('copied')
+  setTimeout(() => {
+    shareBtn.classList.remove('copied')
+  }, 1000)
 
 }
 
@@ -349,13 +381,11 @@ const init = () => {
 
   tryConnectSerial()
   serialBtn.addEventListener('click', onSerialBtnClick, false)
+  shareBtn.addEventListener('click', onShareBtnClick, false)
 
   canvas.width = WIDTH
   canvas.height = HEIGHT
   ctx.imageSmoothingEnabled = false;
-
-  saveState()
-  tryLoadState()
 
   const resizeObserver = new ResizeObserver(onResize);
   resizeObserver.observe(canvas, {box: 'content-box'});
@@ -382,6 +412,8 @@ const init = () => {
   document.getElementById("download").addEventListener('click', download, false)
 
   renderPallete()
+
+  tryLoadState()
 
   // deshabilitar click derecho ( menu contextual)
   window.oncontextmenu = (ev) => ev.preventDefault()
