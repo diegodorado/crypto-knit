@@ -2,33 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Tricotosa</title>
+  <title>Crypto-Knit</title>
   <meta name="description" content="">
   <link rel="stylesheet" href="./src/app.sass">
+  <link rel="stylesheet" href="https://maxst.icons8.com/vue-static/landings/line-awesome/line-awesome/1.3.0/css/line-awesome.min.css">
+  <script type="text/javascript" src="https://rawgit.com/patriciogonzalezvivo/glslCanvas/master/dist/GlslCanvas.js"></script>
 </head>
 <body>
   <div id="app">
-    <div class="left">
-      <h1>Tricotosa</h1>
-      <p>
-        Nota: solo funciona en chrome y debes habilitar el puerto serie experimental desde
-        <pre>chrome://flags/#enable-experimental-web-platform-features</pre>
-      </p>
-      <nav id="tools">
+    <h1>Crypto-Knit</h1>
+    <div id="progress"></div>
+    <div id="canvasWrapper">
+      <div id="toolbar">
+        <label for="filepicker" id="filepicker-label">
+          <i class="las la-file-upload"></i>
+        </label>
         <input id="filepicker" type="file" />
-        <button id="download">Download</button>
-        <button id="share">Share</button>
-        <button id="serial">Connect Serial</button>
-      </nav>
-      <div id="progress" />
+
+        <button id="download" title="Download">
+          <i class="las la-save"></i>
+        </button>
+        <button id="export" title="Export">
+          <i class="las la-download"></i>
+        </button>
+        <button id="share" title="Share">
+          <i class="las la-share"></i>
+        </button>
+        <button id="serial">
+          <i class="las la-plug"></i>
+        </button>
+        <button id="palette0">0</button>
+        <button id="palette1">1</button>
+        <button id="palette2">2</button>
+        <button id="palette3">3</button>
       </div>
-    </div>
-    <div class="right">
-      <div id="canvasWrapper">
-        <span id="cursor"></span>
-        <canvas id="canvas" />
-      </div>
-      <nav id="palette"></nav>
+      <span id="cursor"></span>
+      <canvas id="canvas"></canvas>
+      <canvas id="glslCanvas" width="1024" height="1024"></canvas>
     </div>
   </div>
   <script src="./src/app.js"></script>        

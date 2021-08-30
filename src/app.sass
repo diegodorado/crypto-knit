@@ -1,4 +1,6 @@
 body
+  margin: 0
+  padding: 0
   background-color: #111
   color: #fafafa
   font-family: Inconsolata
@@ -11,25 +13,47 @@ body
   width: 0
 
 #app
-  padding: 20px 10%
-  display: flex
-  .left
-    flex: 2
-  .right
-    padding-left: 10%
-    flex: 3
+  position: relative
+  padding: 20px
+  margin: auto
 
-#tools
+h1
+  text-align: center
+
+#toolbar
+  padding: 0
+  position: absolute
+  left: -64px
+  width: 48px
   display: flex
-  button, input
+  flex-direction: column
+
+  #palette0
+    margin-top: 32px
+  #palette3
+    margin-bottom: 32px
+  #palette0, #palette1, #palette2, #palette3
+    font-size: 0
+    position: relative
+    div
+      button
+        font-size: 16px
+        height: auto
+
+  input[type="file"] 
+    display: none
+
+  button, label
+    text-align: center
+    font-size: 32px
     flex: 1
     border: 1px solid #fafafa
     color: #fafafa
     box-sizing: border-box
     cursor: pointer
     background: #111
-    height: 32px
-    line-height: 32px
+    height: 48px
+    line-height: 48px
     &:hover
       background: #333
   input
@@ -39,6 +63,8 @@ body
       visibility: hidden
 
 #canvasWrapper
+  margin: auto
+  max-width: 75vh
   position: relative
   font-size: 0
   border: 1px solid #fafafa
@@ -47,20 +73,17 @@ body
   position: absolute
   display: none
   pointer-events: none
+  z-index: 1000
 #canvas
-  //cursor: none
   width: 100%
   image-rendering: pixelated
-#progress, #palette, nav
-  margin: 20px 0
-  display: flex
-  border: 1px solid #fafafa
-  box-sizing: border-box
-  span
-    position: relative
-    cursor: pointer
-    flex: 10
-    height: 32px
+#glslCanvas
+  top: 0
+  left: 0
+  pointer-events: none
+  position: absolute
+  width: 100%
+  opacity: 1
 
 #progress
   span

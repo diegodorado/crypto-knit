@@ -1,19 +1,26 @@
 import UPNG from '@pdf-lib/upng';
 import Picker from 'vanilla-picker'
-//import '@fortawesome/fontawesome-free/css/all.css'
+import knitShader from './knit.frag'
 
 // constants
 const WIDTH = 50
 const HEIGHT = 50
 
-const paletteSelector = document.getElementById("palette")
+const app = document.getElementById("app")
+const paletteBtns = [
+  document.getElementById("palette0"),
+  document.getElementById("palette1"),
+  document.getElementById("palette2"),
+  document.getElementById("palette3"),
+]
 const serialBtn = document.getElementById("serial")
 const shareBtn = document.getElementById("share")
 const canvas = document.getElementById("canvas")
 const cursor = document.getElementById("cursor")
 const progress = document.getElementById("progress")
 const ctx = canvas.getContext("2d")
-
+const glslCanvas = document.getElementById("glslCanvas");
+const glslViewer = new GlslCanvas(glslCanvas);
 
 const picker = new Picker({
   popup: 'top',
@@ -24,15 +31,18 @@ const picker = new Picker({
     palette[i * 3 + 1] = color.rgba[1]
     palette[i * 3 + 2] = color.rgba[2]
     renderPallete()
+    renderImage()
+    saveState()
+    console.log(el, i);
   },
   onDone: (color) => {
-    renderImage()
   },
 });
 
 // app state
 let port = null
 let mouseDown = false
+let mouseOver = false
 let x = 0
 let y = 0
 let mouseX = 0
@@ -43,13 +53,22 @@ let cellHeight
 
 
 const onCanvasMouseDown = () => {
-  mouseDown = true
   paintCell()
 }
 
 const onCanvasMouseUp = () => {
   mouseDown = false
 }
+
+const onAppMouseDown = () => {
+  mouseDown = true
+}
+
+const onAppMouseUp = () => {
+  mouseDown = false
+}
+
+
 
 const onCanvasMouseMove = (ev) => {
   mouseX = ev.offsetX
@@ -62,12 +81,13 @@ const onCanvasMouseMove = (ev) => {
 }
 
 const onCanvasMouseEnter = () => {
+  mouseOver = true
   cursor.style.display = 'block'
 }
 
 const onCanvasMouseLeave = () => {
+  mouseOver = false
   cursor.style.display = 'none'
-  mouseDown = false
 }
 
 const paintCell = () => {
@@ -77,7 +97,7 @@ const paintCell = () => {
 
 const paletteIndex = el => {
   for (let i = 0; i < 4; i++) {
-    if (paletteSelector.children[i] === el)
+    if (paletteBtns[i] === el)
       return i
   }
 }
@@ -106,7 +126,7 @@ const onPaletteRightClick = (ev) => {
 const renderPallete = () => {
 
   for (let i = 0; i < 4; i++) {
-    paletteSelector.children[i].style = `background: ${paletteColor(i)};`
+    paletteBtns[i].style = `background: ${paletteColor(i)};`
   }
 
   cursor.style.background = paletteColor(1)
@@ -160,6 +180,8 @@ const loadIndexedImage = (img) => {
   imageData.data.set(buf8);
   ctx.putImageData(imageData, 0, 0);
 
+  updateTextureUniform()
+
 }
 
 const onFileChange = (ev) => {
@@ -209,15 +231,33 @@ function base64ToArrayBuffer(base64) {
     return bytes.buffer;
 }
 
+
+// maybe it would be better to have a isDirty approach
+let saveId = null
+
 const saveState = () => {
+
+  if(saveId){
+    clearTimeout(saveId)
+  }
+  saveId = setTimeout(saveStateDelayed, 500)
+
+  updateTextureUniform()
+}
+
+const updateTextureUniform = () => {
+  const dataUrl = canvas.toDataURL();
+  glslViewer.setUniform("u_tex0",dataUrl)
+}
+
+const saveStateDelayed = () => {
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
   const data = UPNG.encode([imageData.data.buffer], canvas.width, canvas.height, 4)
   const str = btoa(String.fromCharCode(...new Uint8Array(data)))
 
   // push the state
-  window.history.replaceState(null, null, `#${str}`)
-
+  window.history.pushState(null, null, `#${str}`)
 }
 
 const tryLoadState = () => {
@@ -315,6 +355,11 @@ const onShareBtnClick = (ev) => {
 
 const onSerialBtnClick = async () => {
 
+  if(!navigator.serial){
+    alert(`Sólo funciona en chrome\n\nHabilita el puerto serie:\n\nchrome://flags/#enable-experimental-web-platform-features`)
+    return
+  }
+
   // if port is already connected
   if (port) {
     await sendPattern()
@@ -349,6 +394,7 @@ const tryConnectSerial = async () => {
 
 }
 
+/*
 navigator.serial.addEventListener('connect', (e) => {
   console.log(e);
   // Connect to `e.target` or add it to a list of available ports.
@@ -358,6 +404,7 @@ navigator.serial.addEventListener('disconnect', (e) => {
   console.log(e);
   // Remove `e.target` from the list of available ports.
 });
+*/
 
 const connectSerial = async (_port) => {
 
@@ -379,9 +426,17 @@ const connectSerial = async (_port) => {
 
 const init = () => {
 
-  tryConnectSerial()
+  if(navigator.serial){
+    tryConnectSerial()
+  }else{
+    progress.style="display: none"
+  }
+
   serialBtn.addEventListener('click', onSerialBtnClick, false)
   shareBtn.addEventListener('click', onShareBtnClick, false)
+
+  // Load only the Fragment Shader
+  glslViewer.load(knitShader);
 
   canvas.width = WIDTH
   canvas.height = HEIGHT
@@ -390,6 +445,8 @@ const init = () => {
   const resizeObserver = new ResizeObserver(onResize);
   resizeObserver.observe(canvas, {box: 'content-box'});
 
+  app.addEventListener('mousedown', onAppMouseDown, false)
+  app.addEventListener('mouseup', onAppMouseUp, false)
   // Add event listeners for canvas
   canvas.addEventListener('mousedown', onCanvasMouseDown, false)
   canvas.addEventListener('mouseup', onCanvasMouseUp, false)
@@ -398,15 +455,13 @@ const init = () => {
   canvas.addEventListener('mouseleave', onCanvasMouseLeave, false)
 
   for (let i = 0; i < 4; i++) {
-    const span = document.createElement('span')
-    paletteSelector.appendChild(span)
+    paletteBtns[i].addEventListener('click', onPaletteClick, false)
+    paletteBtns[i].addEventListener('contextmenu', onPaletteRightClick, false)
   }
 
   const span = document.createElement('span')
   progress.appendChild(span)
 
-  paletteSelector.addEventListener('click', onPaletteClick, false)
-  paletteSelector.addEventListener('contextmenu', onPaletteRightClick, false)
 
   document.getElementById("filepicker").addEventListener('change', onFileChange, false)
   document.getElementById("download").addEventListener('click', download, false)
