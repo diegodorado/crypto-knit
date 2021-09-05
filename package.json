@@ -11,19 +11,20 @@
     "upload": "dotenv -- bash -c 'ncftpput -z -R -v -m -u ceiborg -p \"$FTPPWD\"  ftp.ceiborg.com /public_html/cryptoknit dist/*'"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^17.0.0",
+    "@rollup/plugin-node-resolve": "^11.0.0",
     "dotenv-cli": "^4.0.0",
     "glslify-bundle": "^5.1.1",
     "glslify-deps": "^1.3.2",
-    "sass": "^1.35.1",
-    "@rollup/plugin-commonjs": "^17.0.0",
-    "@rollup/plugin-node-resolve": "^11.0.0",
     "rollup": "^2.3.4",
     "rollup-plugin-css-only": "^3.1.0",
     "rollup-plugin-livereload": "^2.0.0",
     "rollup-plugin-svelte": "^7.0.0",
     "rollup-plugin-terser": "^7.0.0",
+    "sass": "^1.35.1",
+    "sirv-cli": "^1.0.0",
     "svelte": "^3.0.0",
-    "sirv-cli": "^1.0.0"
+    "svelte-preprocess": "^4.9.1"
   },
   "dependencies": {
     "@pdf-lib/upng": "^1.0.1",
