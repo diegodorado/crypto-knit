@@ -781,6 +781,13 @@ rollup-plugin-livereload@^2.0.0:
   dependencies:
     livereload "^0.9.1"
 
+rollup-plugin-shader@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/rollup-plugin-shader/-/rollup-plugin-shader-0.0.3.tgz#60f453581c644b85971da329433df8375bfa4115"
+  integrity sha512-oE9AsVzJ+0xvVFKY859NMXMSSAIdznZJ3bopFXfqVoIBg/rlZvd35TLLw6YnL0g50rqUk7kvV1F6iUpPReuXYA==
+  dependencies:
+    rollup-pluginutils "^2.0.1"
+
 rollup-plugin-svelte@^7.0.0:
   version "7.1.0"
   resolved "https://registry.yarnpkg.com/rollup-plugin-svelte/-/rollup-plugin-svelte-7.1.0.tgz#d45f2b92b1014be4eb46b55aa033fb9a9c65f04d"
@@ -799,7 +806,7 @@ rollup-plugin-terser@^7.0.0:
     serialize-javascript "^4.0.0"
     terser "^5.0.0"
 
-rollup-pluginutils@^2.8.2:
+rollup-pluginutils@^2.0.1, rollup-pluginutils@^2.8.2:
   version "2.8.2"
   resolved "https://registry.yarnpkg.com/rollup-pluginutils/-/rollup-pluginutils-2.8.2.tgz#72f2af0748b592364dbd3389e600e5a9444a351e"
   integrity sha512-EEp9NhnUkwY8aif6bxgovPHMoMoNr2FulJziTndpt5H9RdwC47GSGuII9XxpSdzVGM0GWrNPHV6ie1LTNJPaLQ==

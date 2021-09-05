@@ -1,4 +1,5 @@
 import preprocess from 'svelte-preprocess';
+import shader from 'rollup-plugin-shader';
 import svelte from 'rollup-plugin-svelte';
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
@@ -38,6 +39,10 @@ export default {
 		file: 'public/build/bundle.js'
 	},
 	plugins: [
+    shader({
+        include: '**/*.frag',
+        removeComments: true,
+    }),
 		svelte({
       preprocess: preprocess(),
 			compilerOptions: {
