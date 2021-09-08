@@ -16,6 +16,29 @@
     paletteIndex = i
   }
 
+  const copy2clip = (text) => {
+    const dummy = document.createElement("input");
+    document.body.appendChild(dummy);
+    dummy.value = text;
+    dummy.select();
+    document.execCommand("copy");
+    document.body.removeChild(dummy);
+  };
+
+  const onShareClick = (ev) => {
+    ev.preventDefault();
+    const str = window.location.href;
+    copy2clip(str);
+
+    // flash message
+    const btn = ev.currentTarget
+    btn.classList.add("copied");
+    setTimeout(() => {
+      btn.classList.remove("copied");
+    }, 1000);
+  };
+
+
 </script>
 
 <div id="toolbar">
@@ -34,7 +57,7 @@
   <button title="Export" on:click={() => dispatch("exportClick")}>
     <i class="las la-download" />
   </button>
-  <button title="Share" on:click={() => dispatch("shareClick")}>
+  <button title="Share" on:click={onShareClick}>
     <i class="las la-share" />
   </button>
   <button on:click={() => dispatch("serialClick")}>
@@ -51,6 +74,25 @@
 </div>
 
 <style lang="sass" type="text/sass">
+
+:global(.copied)
+  position: relative
+  &::after
+    font-size: 1rem
+    user-select: none
+    pointer-events: none
+    content: "Copied to clipboard!"
+    position: absolute
+    font-size: 1.5em
+    width: 10em
+    height: 1em
+    padding: 0.5em
+    bottom: -2.5em
+    left: -5em 
+    background: #111
+    color: #fafafa
+    z-index: 100
+
 
 #toolbar
   padding: 0
@@ -84,6 +126,7 @@
     line-height: 48px
     &:hover
       background: #333
+
   input
     overflow: hidden
     &::-webkit-file-upload-button

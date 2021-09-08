@@ -316,27 +316,6 @@
     progress.children[0].style.width = `0%`;
   };
 
-  const copy2clip = (text) => {
-    const dummy = document.createElement("input");
-    document.body.appendChild(dummy);
-    dummy.value = text;
-    dummy.select();
-    document.execCommand("copy");
-    document.body.removeChild(dummy);
-  };
-
-  const onShareClick = (ev) => {
-    ev.preventDefault();
-    const str = window.location.href;
-    copy2clip(str);
-
-    // flash message
-    shareBtn.classList.add("copied");
-    setTimeout(() => {
-      shareBtn.classList.remove("copied");
-    }, 1000);
-  };
-
   const onSerialClick = async () => {
     if (!navigator.serial) {
       alert(
@@ -486,7 +465,6 @@ navigator.serial.addEventListener('disconnect', (e) => {
         on:serialClick={onSerialClick}
         on:downloadClick={downloadClick}
         on:exportClick={exportClick}
-        on:shareClick={onShareClick}
         on:fileChange={onFileChange}
       />
       <span id="cursor" />
@@ -540,22 +518,5 @@ navigator.serial.addEventListener('disconnect', (e) => {
   position: absolute
   width: 100%
   opacity: 1
-
-.copied
-  position: relative
-  &::after
-    user-select: none
-    pointer-events: none
-    content: "Copied to clipboard!"
-    position: absolute
-    font-size: 1.5em
-    width: 10em
-    height: 1em
-    padding: 0.5em
-    bottom: -2.5em
-    left: 0
-    background: #111
-    color: #fafafa
-    z-index: 100
 
 </style>
