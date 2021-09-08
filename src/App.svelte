@@ -2,22 +2,18 @@
   import { onMount } from "svelte";
   import UPNG from "@pdf-lib/upng";
   import Picker from "vanilla-picker";
+  import knitShader from "./knit.frag";
   import Header from "./components/Header.svelte";
   import Toolbar from "./components/Toolbar.svelte";
-
-  import knitShader from "./knit.frag";
 
   // constants
   const WIDTH = 50;
   const HEIGHT = 50;
 
-  let serialBtn;
-  let shareBtn;
-  let paletteBtns;
   let canvas;
   let cursor;
-  let progress;
   let ctx;
+  let ctx2;
   let glslCanvas;
   let glslViewer;
 
@@ -25,11 +21,10 @@
     popup: "top",
     onChange: (color) => {
       const el = picker.settings.parent;
-      const i = paletteIndex(el);
+      const i = paletteIndex;
       palette[i * 3 + 0] = color.rgba[0];
       palette[i * 3 + 1] = color.rgba[1];
       palette[i * 3 + 2] = color.rgba[2];
-      renderPallete();
       renderImage();
       saveState();
       console.log(el, i);
@@ -50,7 +45,25 @@
   ];
   let cellWidth;
   let cellHeight;
+  let paletteIndex = 0
 
+  const paletteColor = (index) => {
+    const rgb = palette.slice(index * 3, (index + 1) * 3);
+    return `rgb(${rgb.join(",")})`;
+  };
+
+
+  $: colors = [0,1,2,3].map(c => paletteColor(c))
+  $: currentColor = colors[paletteIndex]
+  $: {
+    if(ctx){
+      ctx.fillStyle = currentColor;
+    }
+    if(cursor){
+      cursor.style.background = currentColor;
+    }
+  }
+ 
   const onCanvasMouseDown = () => {
     paintCell();
   };
@@ -91,21 +104,17 @@
     saveState();
   };
 
-  const paletteIndex = (el) => {
-    for (let i = 0; i < 4; i++) {
-      if (paletteBtns[i] === el) return i;
-    }
-  };
-
-  const onPaletteClick = (ev) => {
-    const index = paletteIndex(ev.target);
+  const onColorClick = (ev) => {
+    console.log(ev.detail, paletteIndex)
+    return
+    const index = paletteIndex;
     const color = paletteColor(index);
     ctx.fillStyle = color;
     cursor.style.background = color;
   };
 
   const onPaletteRightClick = (ev) => {
-    const index = paletteIndex(ev.target);
+    const index = paletteIndex;
     const color = paletteColor(index);
     //open color picker
     const options = {
@@ -113,20 +122,6 @@
       color,
     };
     picker.movePopup(options, true);
-  };
-
-  const renderPallete = () => {
-    for (let i = 0; i < 4; i++) {
-      paletteBtns[i].style = `background: ${paletteColor(i)};`;
-    }
-
-    cursor.style.background = paletteColor(1);
-    ctx.fillStyle = paletteColor(1);
-  };
-
-  const paletteColor = (index) => {
-    const rgb = palette.slice(index * 3, (index + 1) * 3);
-    return `rgb(${rgb.join(",")})`;
   };
 
   const renderImage = () => {
@@ -157,7 +152,6 @@
     palette = img.tabs.PLTE;
     //remove transparency
     img.tabs.tRNS = [255, 255, 255, 255];
-    renderPallete();
     // easier to decode this way
     canvas.width = img.width;
     canvas.height = img.height;
@@ -176,6 +170,8 @@
   };
 
   const onFileChange = (ev) => {
+    const { file } = ev.detail;
+
     const reader = new FileReader();
 
     reader.onload = (ev) => {
@@ -199,13 +195,20 @@
       saveState();
     };
 
-    reader.readAsArrayBuffer(ev.target.files[0]);
+    reader.readAsArrayBuffer(file);
   };
 
-  const download = () => {
+  const downloadClick = () => {
     const link = document.createElement("a");
     link.download = "pattern.png";
     link.href = canvas.toDataURL();
+    link.click();
+  };
+
+  const exportClick = () => {
+    const link = document.createElement("a");
+    link.download = "pattern.jpg";
+    link.href = glslCanvas.toDataURL('image/jpeg', 1.0);
     link.click();
   };
 
@@ -322,7 +325,7 @@
     document.body.removeChild(dummy);
   };
 
-  const onShareBtnClick = (ev) => {
+  const onShareClick = (ev) => {
     ev.preventDefault();
     const str = window.location.href;
     copy2clip(str);
@@ -334,7 +337,7 @@
     }, 1000);
   };
 
-  const onSerialBtnClick = async () => {
+  const onSerialClick = async () => {
     if (!navigator.serial) {
       alert(
         `Sólo funciona en chrome\n\nHabilita el puerto serie:\n\nchrome://flags/#enable-experimental-web-platform-features`
@@ -398,23 +401,19 @@ navigator.serial.addEventListener('disconnect', (e) => {
 
   const init = () => {
     const app = document.getElementById("app");
-    serialBtn = document.getElementById("serial");
-    shareBtn = document.getElementById("share");
     canvas = document.getElementById("canvas");
-    cursor = document.getElementById("cursor");
-    progress = document.getElementById("progress");
-    ctx = canvas.getContext("2d");
     glslCanvas = document.getElementById("glslCanvas");
+    cursor = document.getElementById("cursor");
+    ctx = canvas.getContext("2d");
+    // FIXME: this is needed to be able to export the webgl image
+    // but has performance impact.
+    // it would be better to create the context, render the image, export, and destroy the context
+    ctx2 = glslCanvas.getContext("webgl", {preserveDrawingBuffer: true})
     glslViewer = new GlslCanvas(glslCanvas);
 
     if (navigator.serial) {
       tryConnectSerial();
-    } else {
-      progress.style = "display: none";
     }
-
-    serialBtn.addEventListener("click", onSerialBtnClick, false);
-    shareBtn.addEventListener("click", onShareBtnClick, false);
 
     // Load only the Fragment Shader
     glslViewer.load(knitShader);
@@ -434,29 +433,6 @@ navigator.serial.addEventListener('disconnect', (e) => {
     canvas.addEventListener("mousemove", onCanvasMouseMove, false);
     canvas.addEventListener("mouseenter", onCanvasMouseEnter, false);
     canvas.addEventListener("mouseleave", onCanvasMouseLeave, false);
-
-    paletteBtns = Array.from(document.getElementsByClassName("palette"));
-
-    for (let i = 0; i < 4; i++) {
-      paletteBtns[i].addEventListener("click", onPaletteClick, false);
-      paletteBtns[i].addEventListener(
-        "contextmenu",
-        onPaletteRightClick,
-        false
-      );
-    }
-
-    const span = document.createElement("span");
-    progress.appendChild(span);
-
-    document
-      .getElementById("filepicker")
-      .addEventListener("change", onFileChange, false);
-    document
-      .getElementById("download")
-      .addEventListener("click", download, false);
-
-    renderPallete();
 
     tryLoadState();
 
@@ -500,13 +476,24 @@ navigator.serial.addEventListener('disconnect', (e) => {
 
 <main>
   <div id="app">
+    {currentColor}
+    {paletteIndex}
     <Header />
     <div id="canvasWrapper">
-      <Toolbar />
+      <Toolbar
+        {colors}
+        bind:paletteIndex={paletteIndex}
+        on:serialClick={onSerialClick}
+        on:downloadClick={downloadClick}
+        on:exportClick={exportClick}
+        on:shareClick={onShareClick}
+        on:fileChange={onFileChange}
+      />
       <span id="cursor" />
       <canvas id="canvas" />
       <canvas id="glslCanvas" width="1024" height="1024" />
     </div>
+    <canvas id="mirrorCanvas" width="1024" height="1024" />
   </div>
 </main>
 

@@ -1,32 +1,54 @@
 <script>
-  let colors = [0,1,2,3]
-  const handleClick = (color) => {
-    colors = colors.filter( (c) => c !== color)
+  import { createEventDispatcher } from "svelte";
+  const dispatch = createEventDispatcher();
+
+  export let colors;
+  export let paletteIndex;
+
+  let files;
+ 	$: if (files) {
+		for (const file of files) {
+      dispatch("fileChange", { file });
+		}
+	}
+
+  const onPaletteClick = (i) => {
+    paletteIndex = i
   }
+
 </script>
 
 <div id="toolbar">
   <label for="filepicker" id="filepicker-label">
-    <i class="las la-file-upload"></i>
+    <i class="las la-file-upload" />
   </label>
-  <input id="filepicker" type="file" />
-  <button id="download" title="Download">
-    <i class="las la-save"></i>
+  <input 
+    id="filepicker" 
+    type="file" 
+   	accept="image/png, image/jpeg"
+    bind:files
+  />
+  <button title="Download" on:click={() => dispatch("downloadClick")}>
+    <i class="las la-save" />
   </button>
-  <button id="export" title="Export">
-    <i class="las la-download"></i>
+  <button title="Export" on:click={() => dispatch("exportClick")}>
+    <i class="las la-download" />
   </button>
-  <button id="share" title="Share">
-    <i class="las la-share"></i>
+  <button title="Share" on:click={() => dispatch("shareClick")}>
+    <i class="las la-share" />
   </button>
-  <button id="serial">
-    <i class="las la-plug"></i>
+  <button on:click={() => dispatch("serialClick")}>
+    <i class="las la-plug" />
   </button>
-  {#each colors as color}
-    <button class="palette" on:click={() => handleClick(color)}>{color}</button>
+  {#each colors as color, i}
+      <button 
+        class="palette" 
+        on:click={() => onPaletteClick(i)}
+        style="background-color:{color}"
+      >{i}</button
+    >
   {/each}
 </div>
-
 
 <style lang="sass" type="text/sass">
 
