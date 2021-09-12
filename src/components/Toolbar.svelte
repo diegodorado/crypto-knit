@@ -66,9 +66,10 @@
   {#each colors as color, i}
       <button 
         class="palette" 
+        class:selected="{paletteIndex === i}"
         on:click={() => onPaletteClick(i)}
         style="background-color:{color}"
-      >{i}</button
+      ></button
     >
   {/each}
 </div>
@@ -103,21 +104,18 @@
   flex-direction: column
 
   .palette
-    font-size: 0
     position: relative
-    div
-      button
-        font-size: 16px
-        height: auto
+    &:after
+      display: block
+      content: ""
+      height: 48px
 
-  input[type="file"] 
-    display: none
-
-  button, label
+  button, label, .test
     text-align: center
     font-size: 32px
     flex: 1
     border: 1px solid #fafafa
+    padding: 0
     color: #fafafa
     box-sizing: border-box
     cursor: pointer
@@ -126,11 +124,13 @@
     line-height: 48px
     &:hover
       background: #333
+    &.selected
+      box-shadow: inset 2px 2px 0 #111,inset -2px -2px 0 #111
+      &:after
+        border: 2px dashed #fff
+        height: 44px
 
-  input
-    overflow: hidden
-    &::-webkit-file-upload-button
-      width: 1px
-      visibility: hidden
+  input[type="file"] 
+    display: none
 
 </style>
