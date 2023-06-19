@@ -5,15 +5,14 @@
   import knitShader from "./knit.frag";
   import Header from "./components/Header.svelte";
   import Toolbar from "./components/Toolbar.svelte";
+  import Canvas from "./components/Canvas.svelte";
 
   // constants
-  const WIDTH = 50;
-  const HEIGHT = 50;
+  const CANVAS_SIZES = [32, 48, 64, 80, 96];
 
   let canvas;
   let cursor;
   let ctx;
-  let ctx2;
   let glslCanvas;
   let glslViewer;
 
@@ -40,30 +39,40 @@
   let y = 0;
   let mouseX = 0;
   let mouseY = 0;
-  let palette = [
-    0x11, 0x11, 0x11, 0x55, 0xff, 0xff, 0xff, 0x55, 0xff, 0xfa, 0xfa, 0xfa,
-  ];
   let cellWidth;
   let cellHeight;
-  let paletteIndex = 0
 
-  const paletteColor = (index) => {
+  $: canvasSizeIndex = 0;
+  $: canvasSize = CANVAS_SIZES[canvasSizeIndex];
+  $: {
+    if (canvas) {
+      canvas.width = canvasSize;
+      canvas.height = canvasSize;
+      onResize()
+    }
+  }
+
+  $: palette = [
+    0x11, 0x11, 0x11, 0x55, 0xff, 0xff, 0xff, 0x55, 0xff, 0xfa, 0xfa, 0xfa,
+  ];
+  $: paletteIndex = 0;
+
+  $: paletteColor = (index) => {
     const rgb = palette.slice(index * 3, (index + 1) * 3);
     return `rgb(${rgb.join(",")})`;
   };
 
-
-  $: colors = [0,1,2,3].map(c => paletteColor(c))
-  $: currentColor = colors[paletteIndex]
+  $: colors = [0, 1, 2, 3].map((c) => paletteColor(c));
+  $: currentColor = colors[paletteIndex];
   $: {
-    if(ctx){
+    if (ctx) {
       ctx.fillStyle = currentColor;
     }
-    if(cursor){
+    if (cursor) {
       cursor.style.background = currentColor;
     }
   }
- 
+
   const onCanvasMouseDown = () => {
     paintCell();
   };
@@ -102,15 +111,6 @@
   const paintCell = () => {
     ctx.fillRect(x, y, 1, 1);
     saveState();
-  };
-
-  const onColorClick = (ev) => {
-    console.log(ev.detail, paletteIndex)
-    return
-    const index = paletteIndex;
-    const color = paletteColor(index);
-    ctx.fillStyle = color;
-    cursor.style.background = color;
   };
 
   const onPaletteRightClick = (ev) => {
@@ -158,7 +158,7 @@
     onResize();
 
     // get the image data buffer
-    const imageData = ctx.getImageData(0, 0, img.width, img.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
     // convert to RGBA
     const buf8 = new Uint8Array(UPNG.toRGBA8(img)[0]);
@@ -174,41 +174,75 @@
 
     const reader = new FileReader();
 
-    reader.onload = (ev) => {
-      const buffer = ev.target.result;
+    if (file.type === "image/pn") {
+      reader.onload = (ev) => {
+        const buffer = ev.target.result;
 
-      // decode PNG buffer
-      const img = UPNG.decode(buffer);
+        // decode PNG buffer
+        const img = UPNG.decode(buffer);
 
-      // convert to RGBA
-      const buf8 = new Uint8Array(UPNG.toRGBA8(img)[0]);
+        // convert to RGBA
+        const buf8 = new Uint8Array(UPNG.toRGBA8(img)[0]);
 
-      // re-encode to 4 color PNG
-      const data = UPNG.encode([buf8], img.width, img.height, 4);
+        // re-encode to 4 color PNG
+        const data = UPNG.encode([buf8], img.width, img.height, 4);
 
-      // re-decode PNG data
-      const img2 = UPNG.decode(data);
+        // re-decode PNG data
+        const img2 = UPNG.decode(data);
 
-      loadIndexedImage(img2);
+        loadIndexedImage(img2);
 
-      // save the state
-      saveState();
-    };
+        // save the state
+        saveState();
+      };
 
-    reader.readAsArrayBuffer(file);
+      reader.readAsArrayBuffer(file);
+    } else {
+      // load to image to get it's width/height
+      let img = new Image();
+      img.onload = () => {
+        // draw image into the canvas
+        ctx.drawImage(img, 0, 0, ctx.canvas.width, ctx.canvas.height);
+
+        // extract canvas image data
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        // re-encode to 4 color PNG
+        const data = UPNG.encode(
+          [imageData.data.buffer],
+          canvas.width,
+          canvas.height,
+          4
+        );
+
+        // re-decode PNG data
+        const img2 = UPNG.decode(data);
+
+        loadIndexedImage(img2);
+
+        // save the state
+        saveState();
+      };
+      // this is to setup loading the image
+      reader.onloadend = (ev) => {
+        img.src = ev.target.result;
+      };
+      // this is to read the file
+      reader.readAsDataURL(file);
+    }
   };
 
-  const downloadClick = () => {
+  const onDownloadClick = () => {
     const link = document.createElement("a");
     link.download = "pattern.png";
     link.href = canvas.toDataURL();
     link.click();
   };
 
-  const exportClick = () => {
+  const onExportClick = () => {
     const link = document.createElement("a");
     link.download = "pattern.jpg";
-    link.href = glslCanvas.toDataURL('image/jpeg', 1.0);
+    link.href = glslCanvas.toDataURL("image/jpeg", 1.0);
     link.click();
   };
 
@@ -387,7 +421,9 @@ navigator.serial.addEventListener('disconnect', (e) => {
     // FIXME: this is needed to be able to export the webgl image
     // but has performance impact.
     // it would be better to create the context, render the image, export, and destroy the context
-    ctx2 = glslCanvas.getContext("webgl", {preserveDrawingBuffer: true})
+    const ctx2 = glslCanvas.getContext("webgl", {
+      preserveDrawingBuffer: true,
+    });
     glslViewer = new GlslCanvas(glslCanvas);
 
     if (navigator.serial) {
@@ -397,8 +433,8 @@ navigator.serial.addEventListener('disconnect', (e) => {
     // Load only the Fragment Shader
     glslViewer.load(knitShader);
 
-    canvas.width = WIDTH;
-    canvas.height = HEIGHT;
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
     ctx.imageSmoothingEnabled = false;
 
     const resizeObserver = new ResizeObserver(onResize);
@@ -455,23 +491,23 @@ navigator.serial.addEventListener('disconnect', (e) => {
 
 <main>
   <div id="app">
-    {currentColor}
-    {paletteIndex}
     <Header />
     <div id="canvasWrapper">
       <Toolbar
         {colors}
-        bind:paletteIndex={paletteIndex}
+        {canvasSize}
+        {CANVAS_SIZES}
+        bind:paletteIndex
+        bind:canvasSizeIndex
         on:serialClick={onSerialClick}
-        on:downloadClick={downloadClick}
-        on:exportClick={exportClick}
+        on:downloadClick={onDownloadClick}
+        on:exportClick={onExportClick}
         on:fileChange={onFileChange}
       />
       <span id="cursor" />
       <canvas id="canvas" />
       <canvas id="glslCanvas" width="1024" height="1024" />
     </div>
-    <canvas id="mirrorCanvas" width="1024" height="1024" />
   </div>
 </main>
 
@@ -487,18 +523,18 @@ navigator.serial.addEventListener('disconnect', (e) => {
   a
     color: inherit
     cursor: pointer
-
-:global(::-webkit-scrollbar)
-  width: 0
+  &::-webkit-scrollbar
+    width: 0
 
 #app
   position: relative
-  padding: 20px
+  padding: 0
   margin: auto
 
 #canvasWrapper
   margin: auto
-  max-width: 75vh
+  width: 60vh
+  height: 90vh
   position: relative
   font-size: 0
   border: 1px solid #fafafa
@@ -510,6 +546,7 @@ navigator.serial.addEventListener('disconnect', (e) => {
   z-index: 1000
 #canvas
   width: 100%
+  height: 100%
   image-rendering: pixelated
 #glslCanvas
   top: 0
@@ -517,6 +554,7 @@ navigator.serial.addEventListener('disconnect', (e) => {
   pointer-events: none
   position: absolute
   width: 100%
-  opacity: 1
+  height: 100%
+  opacity: 0.5
 
 </style>

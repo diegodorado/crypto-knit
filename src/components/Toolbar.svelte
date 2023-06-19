@@ -4,17 +4,20 @@
 
   export let colors;
   export let paletteIndex;
+  export let canvasSize;
+  export let CANVAS_SIZES;
+  export let canvasSizeIndex;
 
   let files;
- 	$: if (files) {
-		for (const file of files) {
+  $: if (files) {
+    for (const file of files) {
       dispatch("fileChange", { file });
-		}
-	}
+    }
+  }
 
   const onPaletteClick = (i) => {
-    paletteIndex = i
-  }
+    paletteIndex = i;
+  };
 
   const copy2clip = (text) => {
     const dummy = document.createElement("input");
@@ -31,24 +34,34 @@
     copy2clip(str);
 
     // flash message
-    const btn = ev.currentTarget
+    const btn = ev.currentTarget;
     btn.classList.add("copied");
     setTimeout(() => {
       btn.classList.remove("copied");
     }, 1000);
   };
 
+  const onDecreaseCanvasSize = () => {
+    if (canvasSizeIndex > 0) {
+      canvasSizeIndex -= 1;
+    }
+  };
 
+  const onIncreaseCanvasSize = () => {
+    if (canvasSizeIndex < CANVAS_SIZES.length - 1) {
+      canvasSizeIndex += 1;
+    }
+  };
 </script>
 
 <div id="toolbar">
   <label for="filepicker" id="filepicker-label">
     <i class="las la-file-upload" />
   </label>
-  <input 
-    id="filepicker" 
-    type="file" 
-   	accept="image/png, image/jpeg"
+  <input
+    id="filepicker"
+    type="file"
+    accept="image/png, image/jpeg"
     bind:files
   />
   <button title="Download" on:click={() => dispatch("downloadClick")}>
@@ -64,14 +77,20 @@
     <i class="las la-plug" />
   </button>
   {#each colors as color, i}
-      <button 
-        class="palette" 
-        class:selected="{paletteIndex === i}"
-        on:click={() => onPaletteClick(i)}
-        style="background-color:{color}"
-      ></button
-    >
+    <button
+      class="palette"
+      class:selected={paletteIndex === i}
+      on:click={() => onPaletteClick(i)}
+      style="background-color:{color}"
+    />
   {/each}
+  <button on:click={onDecreaseCanvasSize}>
+    <i class="las la-minus" />
+  </button>
+  <span class="canvasSize">{canvasSize}</span>
+  <button on:click={onIncreaseCanvasSize}>
+    <i class="las la-plus" />
+  </button>
 </div>
 
 <style lang="sass" type="text/sass">
@@ -110,7 +129,7 @@
       content: ""
       height: 48px
 
-  button, label, .test
+  button, label, .canvasSize
     text-align: center
     font-size: 32px
     flex: 1
@@ -130,6 +149,8 @@
         border: 2px dashed #fff
         height: 44px
 
+  .canvasSize
+    font-size: 20px
   input[type="file"] 
     display: none
 
