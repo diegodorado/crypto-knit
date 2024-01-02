@@ -5,10 +5,9 @@
   import knitShader from "./knit.frag";
   import Header from "./components/Header.svelte";
   import Toolbar from "./components/Toolbar.svelte";
-  import Canvas from "./components/Canvas.svelte";
 
   // constants
-  const CANVAS_SIZES = [32, 48, 64, 80, 96];
+  const CANVAS_SIZES = [16, 32, 48, 64, 96, 128];
 
   let canvas;
   let cursor;
@@ -26,7 +25,6 @@
       palette[i * 3 + 2] = color.rgba[2];
       renderImage();
       saveState();
-      console.log(el, i);
     },
     onDone: (color) => {},
   });
@@ -43,14 +41,6 @@
   let cellHeight;
 
   $: canvasSizeIndex = 0;
-  $: canvasSize = CANVAS_SIZES[canvasSizeIndex];
-  $: {
-    if (canvas) {
-      canvas.width = canvasSize;
-      canvas.height = canvasSize;
-      onResize()
-    }
-  }
 
   $: palette = [
     0x11, 0x11, 0x11, 0x55, 0xff, 0xff, 0xff, 0x55, 0xff, 0xfa, 0xfa, 0xfa,
@@ -72,6 +62,8 @@
       cursor.style.background = currentColor;
     }
   }
+
+  const canvasSize = () => CANVAS_SIZES[canvasSizeIndex];
 
   const onCanvasMouseDown = () => {
     paintCell();
@@ -133,7 +125,7 @@
       [imageData.data.buffer],
       canvas.width,
       canvas.height,
-      4
+      4,
     );
     const img = UPNG.decode(data);
 
@@ -155,7 +147,7 @@
     // easier to decode this way
     canvas.width = img.width;
     canvas.height = img.height;
-    onResize();
+    updateCursorSize();
 
     // get the image data buffer
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -212,7 +204,7 @@
           [imageData.data.buffer],
           canvas.width,
           canvas.height,
-          4
+          4,
         );
 
         // re-decode PNG data
@@ -230,6 +222,17 @@
       // this is to read the file
       reader.readAsDataURL(file);
     }
+  };
+
+  const onChangeCanvasSize = (ev) => {
+    const { index } = ev.detail;
+    canvasSizeIndex = index;
+    console.log(canvasSize());
+    canvas.width = canvasSize();
+    canvas.height = canvasSize();
+    // updateCursorSize();
+    // updateTextureUniform();
+    saveState();
   };
 
   const onDownloadClick = () => {
@@ -279,7 +282,7 @@
       [imageData.data.buffer],
       canvas.width,
       canvas.height,
-      4
+      4,
     );
     const str = btoa(String.fromCharCode(...new Uint8Array(data)));
 
@@ -353,7 +356,7 @@
   const onSerialClick = async () => {
     if (!navigator.serial) {
       alert(
-        `Sólo funciona en chrome\n\nHabilita el puerto serie:\n\nchrome://flags/#enable-experimental-web-platform-features`
+        `Sólo funciona en chrome\n\nHabilita el puerto serie:\n\nchrome://flags/#enable-experimental-web-platform-features`,
       );
       return;
     }
@@ -433,8 +436,12 @@ navigator.serial.addEventListener('disconnect', (e) => {
     // Load only the Fragment Shader
     glslViewer.load(knitShader);
 
-    canvas.width = canvasSize;
-    canvas.height = canvasSize;
+    canvas.width = canvasSize();
+    canvas.height = canvasSize();
+
+    updateCursorSize();
+    updateTextureUniform();
+
     ctx.imageSmoothingEnabled = false;
 
     const resizeObserver = new ResizeObserver(onResize);
@@ -462,7 +469,7 @@ navigator.serial.addEventListener('disconnect', (e) => {
     requestAnimationFrame(raf);
   };
 
-  const onResize = () => {
+  const updateCursorSize = () => {
     const { clientWidth, clientHeight, width, height } = canvas;
 
     cellWidth = clientWidth / width;
@@ -470,6 +477,10 @@ navigator.serial.addEventListener('disconnect', (e) => {
 
     cursor.style.width = `${Math.floor(cellWidth)}px`;
     cursor.style.height = `${Math.floor(cellHeight)}px`;
+  };
+
+  const onResize = () => {
+    updateCursorSize();
   };
 
   const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
@@ -499,6 +510,7 @@ navigator.serial.addEventListener('disconnect', (e) => {
         {CANVAS_SIZES}
         bind:paletteIndex
         bind:canvasSizeIndex
+        on:changeCanvasSize={onChangeCanvasSize}
         on:serialClick={onSerialClick}
         on:downloadClick={onDownloadClick}
         on:exportClick={onExportClick}
@@ -548,6 +560,7 @@ navigator.serial.addEventListener('disconnect', (e) => {
   width: 100%
   height: 100%
   image-rendering: pixelated
+  opacity: 0
 #glslCanvas
   top: 0
   left: 0
@@ -555,6 +568,5 @@ navigator.serial.addEventListener('disconnect', (e) => {
   position: absolute
   width: 100%
   height: 100%
-  opacity: 0.5
 
 </style>

@@ -1,0 +1,105 @@
+body
+  margin: 0
+  padding: 0
+  background-color: #111
+  color: #fafafa
+  font-family: Inconsolata
+  font-size: 16px
+  user-select: none
+  a
+    color: inherit
+    cursor: pointer
+  &::-webkit-scrollbar
+    width: 0
+
+#app
+  position: relative
+  padding: 0
+  margin: auto
+
+  &.paletteConfigOn
+    #filepicker-label, #serialBtn, #cursor
+      visibility: hidden
+    #canvas
+      cursor: pointer
+
+h1
+  text-align: center
+  padding: 0.5em
+  margin: 0
+
+#progress
+  display: none
+  span
+    background: #fafafa
+    flex: none
+
+#canvasWrapper
+  margin: auto
+  width: 60vh
+  height: 90vh
+  position: relative
+  // font-size: 0
+  border: 1px solid #fafafa
+  box-sizing: border-box
+#cursor
+  border: 1px dashed grey
+  position: absolute
+  display: none
+  pointer-events: none
+  z-index: 1000
+#canvas
+  cursor: none
+  width: 100%
+  height: 100%
+  image-rendering: pixelated
+  opacity: 0
+#glslCanvas
+  top: 0
+  left: 0
+  pointer-events: none
+  position: absolute
+  width: 100%
+  height: 100%
+
+
+#toolbar
+  padding: 0
+  position: absolute
+  left: -64px
+  width: 48px
+  display: flex
+  flex-direction: column
+
+  .palette
+    position: relative
+    &:after
+      display: block
+      content: ""
+      height: 48px
+
+  button, label, .canvasSize
+    text-align: center
+    font-size: 32px
+    flex: 1
+    border: 1px solid #fafafa
+    padding: 0
+    color: #fafafa
+    box-sizing: border-box
+    cursor: pointer
+    background: #111
+    height: 48px
+    line-height: 48px
+    &:hover
+      background: #333
+    &.selected
+      box-shadow: inset 2px 2px 0 #111,inset -2px -2px 0 #111
+      &:after
+        border: 2px dashed #fff
+        height: 44px
+
+  .canvasSize
+    font-size: 20px
+  input[type="file"] 
+    display: none
+

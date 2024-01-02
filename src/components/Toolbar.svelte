@@ -4,7 +4,6 @@
 
   export let colors;
   export let paletteIndex;
-  export let canvasSize;
   export let CANVAS_SIZES;
   export let canvasSizeIndex;
 
@@ -43,13 +42,13 @@
 
   const onDecreaseCanvasSize = () => {
     if (canvasSizeIndex > 0) {
-      canvasSizeIndex -= 1;
+      dispatch("changeCanvasSize", { index: canvasSizeIndex - 1 });
     }
   };
 
   const onIncreaseCanvasSize = () => {
     if (canvasSizeIndex < CANVAS_SIZES.length - 1) {
-      canvasSizeIndex += 1;
+      dispatch("changeCanvasSize", { index: canvasSizeIndex + 1 });
     }
   };
 </script>
@@ -87,7 +86,7 @@
   <button on:click={onDecreaseCanvasSize}>
     <i class="las la-minus" />
   </button>
-  <span class="canvasSize">{canvasSize}</span>
+  <span class="canvasSize">{CANVAS_SIZES[canvasSizeIndex]}</span>
   <button on:click={onIncreaseCanvasSize}>
     <i class="las la-plus" />
   </button>
