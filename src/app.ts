@@ -303,6 +303,7 @@ const saveStateDelayed = () => {
 }
 
 const tryLoadState = () => {
+  return
   // TODO: load metadata along with img
   const parts = location.hash.split('#')
   if (parts.length === 2) {
@@ -357,15 +358,16 @@ const sendPattern = async () => {
     await writer.write(chunk)
     i += chunk.length
 
-    const percent = Math.round((i * 100) / encoded.length)
-    progress.children[0].style.width = `${percent}%`
+    // const percent = Math.round((i * 100) / encoded.length)
+    // progress.children[0].style.width = `${percent}%`
   }
 
   // Allow the serial port to be closed later.
   writer.releaseLock()
 
-  progress.children[0].style.width = `0%`
+  // progress.children[0].style.width = `0%`
 }
+
 
 const onSerialClick = async () => {
   if (!navigator.serial) {
@@ -442,7 +444,7 @@ const updateSelectedColor = () => {
 
   const colors = threadIndexes.map((i) => THREAD_COLORS[i])
 
-  paletteBtns.forEach((btn, i) => (btn.style = `background-color:${colors[i]}`))
+  paletteBtns.forEach((btn, i) => (btn.style.cssText = `background-color:${colors[i]}`))
   const currentColor = colors[paletteIndex]
   ctx.fillStyle = currentColor
   cursor.style.background = currentColor
@@ -555,7 +557,7 @@ const init = () => {
     true
   )
 
-  // tryLoadState()
+  tryLoadState()
 
   // deshabilitar click derecho ( menu contextual)
   // window.oncontextmenu = (ev) => ev.preventDefault()
