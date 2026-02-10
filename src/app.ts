@@ -205,6 +205,7 @@ const handleFileChange = (ev: Event) => {
   const img = new Image()
   img.onload = () => {
     const size = CANVAS_SIZES[canvasSizeIndex]
+    ctx.clearRect(0, 0, size, size)
     // draw image into the canvas
     ctx.drawImage(img, 0, 0, size, size)
 
@@ -350,7 +351,7 @@ const sendPattern = async () => {
 
   const len = 8
 
-  for (let i = 0; i < encoded.length; ) {
+  for (let i = 0; i < encoded.length;) {
     const chunk = encoded.slice(i, i + len)
     //await writer.ready
     await writer.write(chunk)
